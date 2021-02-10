@@ -1,8 +1,8 @@
 Arguments: 
-  /usr/local/bin/node /usr/local/bin/yarn install
+  /usr/local/bin/node /usr/local/bin/yarn
 
 PATH: 
-  /Users/steven.chen/programs/flutter/bin:/Users/steven.chen/programs/flutter/bin:/Users/steven.chen/programs/flutter/bin:~/Library/Android/sdk/tools:~/Library/Android/sdk/platform-tools:/Users/steven.chen/programs/flutter/bin:~/Library/Android/sdk/tools:~/Library/Android/sdk/platform-tools:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin:~/Library/Android/sdk:~/Library/Android/sdk/tools:~/Library/Android/sdk/platform-tools:/Users/steven.chen/Library/Android/sdk:/Users/steven.chen/Library/Android/sdk/tools:/Users/steven.chen/Library/Android/sdk/platform-tools:/Users/steven.chen/Library/Android/sdk:/Users/steven.chen/Library/Android/sdk/tools:/Users/steven.chen/Library/Android/sdk/platform-tools
+  /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin
 
 Yarn version: 
   1.22.4
