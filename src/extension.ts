@@ -9,7 +9,7 @@ const compiledJson: Set<string> = new Set();
 
 export function activate(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand(
-        'autojson2dart.convertAllDJsonToDart',
+        'auto-json2dart.convertAllDJsonToDart',
         () => {
             generateAll();
             vscode.window.showInformationMessage('convert done!');

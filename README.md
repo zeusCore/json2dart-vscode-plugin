@@ -7,7 +7,7 @@ This extention automatically convert `*.d.json` to `*.g.dart`, which is very eas
 1. When open a folder, it will compile all of the json file matching the glob pattern `**/*.d.json` 
 2. Create a json file with the name suffix `.d.json`.
 3. Rename or Save the json file `XXX.d.json`.
-4. Open command pallete and find `AutoJson2Dart:Convert all *.d.json to *.g.dart`.
+4. Open command pallete and find `auto-json2dart:Convert all *.d.json to *.g.dart`.
 
 Delete a json file with name `XXX.d.json` will also delete the dart file `XXX.g.dart` at the same time.
 
