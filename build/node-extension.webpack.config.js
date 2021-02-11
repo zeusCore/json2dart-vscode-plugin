@@ -25,7 +25,14 @@ const config = {
     extensions: ['.ts', '.js']
   },
   module: {
-    rules: [
+    rules: [{
+      test: /\.ejs$/,
+      loader: 'ejs-loader',
+      options: {
+        variable: 'ctx',
+        esModule: false
+      }
+    },
       {
         test: /\.ts$/,
         exclude: /node_modules/,

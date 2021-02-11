@@ -10,14 +10,15 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--openFolder=${workspaceFolder}",
-				"--disable-extensions"
+				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
+			"runtimeExecutable": "${execPath}",
 			"outFiles": [
 				"${workspaceFolder}/dist/extension.js"
 			],
-			"preLaunchTask": "${defaultBuildTask}"
+			"env": {
+				"VSCODE_DEBUG_MODE": true
+			}
 		},
 		{
 			"name": "Extension Tests",

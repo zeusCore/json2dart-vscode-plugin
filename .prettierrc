@@ -1,0 +1,23 @@
+{
+    "singleQuote": true,
+    "semi": true,
+    "tabWidth": 4,
+    "bracketSpacing": true,
+    "arrowParens": "always",
+    "trailingComma": "none",
+    "overrides": [
+        {
+            "files": "src/**/*.ts",
+            "options": {
+                "parser": "typescript"
+            }
+        },
+        {
+            "files": "src/**/*.scss",
+            "options": {
+                "singleQuote": false,
+                "semi": true
+            }
+        }
+    ]
+}
