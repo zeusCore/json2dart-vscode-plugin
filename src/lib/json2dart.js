@@ -159,7 +159,7 @@ export default function generate(rootClass, jsonObj) {
     };
     //!获取数组循环语句
     let getIterateLines = (arr, className, key, legalKey, jsonKey) => {
-        if (legalKey == 'data') {
+        if (legalKey === 'data') {
             legalKey = 'this.data';
         }
 
@@ -289,6 +289,9 @@ export default function generate(rootClass, jsonObj) {
     //!json对象转dart
     let objToDart = (jsonObj, prefix, baseClass) => {
         if (Array.isArray(jsonObj)) {
+            if (!baseClass.endsWith('Item')) {
+                baseClass += 'Item';
+            }
             return objToDart(jsonObj[0], prefix, baseClass);
         }
 
@@ -351,6 +354,9 @@ export default function generate(rootClass, jsonObj) {
                     subClassName = snakeToCamel(subClassName);
 
                     if (Array.isArray(element)) {
+                        if (!subClassName.endsWith('Item')) {
+                            subClassName += 'Item';
+                        }
                         let { inner, innerClass, count } = getInnerObjInfo(
                             element,
                             subClassName

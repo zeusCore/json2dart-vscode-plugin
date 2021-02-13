@@ -4,7 +4,7 @@
     "publisher": "zeuscore",
     "description": "Convert *.d.json to *.g.dart automatically ",
     "icon": "images/json2dart.png",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "keywords": [
         "json",
         "generate",
