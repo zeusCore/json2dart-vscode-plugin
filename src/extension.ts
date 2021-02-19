@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import * as Mock from 'mockjs';
 const json2dart = require('./lib/json2dart.js').default;
 import saveAsFile from './lib/fileSaver';
 
@@ -40,7 +41,7 @@ function deleteGFile(uri: vscode.Uri) {
         if (compiledJson.has(uri.fsPath)) {
             compiledJson.delete(uri.fsPath);
         }
-        const gfile = uri.fsPath.replace(/\.d\.json/, '.g.dart');
+        const gfile = uri.fsPath.replace(/\.(d|tpl)\.json/, '.g.dart');
         if (fs.existsSync(gfile)) {
             vscode.workspace.fs.delete(vscode.Uri.parse(gfile));
         }
@@ -60,13 +61,21 @@ function generateAll() {
     vscode.workspace.findFiles('**/*.d.json').then((uris) => {
         uris.forEach(generateByUri);
     });
+    vscode.workspace.findFiles('**/*.tpl.json').then((uris) => {
+        uris.forEach(generateByUri);
+    });
 }
 
 function generate(filePath: string, content: string) {
-    if (filePath.includes('.d.json')) {
-        const targetPath = filePath.replace(/\.d(art)?\.json/, '.g.dart');
+    if (filePath.includes('.d.json') || filePath.includes('.tpl.json')) {
+        const targetPath = filePath.replace(
+            /(\.mock)?\.(d(art)?|tpl?)\.json/,
+            '.g.dart'
+        );
         const fileName = targetPath.split(/[\\\/]/).pop() || '';
         const className = fileName.split('.')[0].replace(/\W/, '');
+        const isTpl = filePath.includes('.tpl.json');
+        const isMock = filePath.includes('.mock.');
         if (!/[a-zA-Z_]/.test(className[0])) {
             vscode.window.showErrorMessage(
                 `File name should be start with /[a-zA-Z]/: ${className}`
@@ -77,6 +86,9 @@ function generate(filePath: string, content: string) {
         let code;
         try {
             jsonObject = JSON.parse(content);
+            if (isTpl) {
+                jsonObject = Mock.mock(jsonObject);
+            }
         } catch (e) {
             vscode.window.showErrorMessage(
                 `File content cannot be converted to JSON: ${filePath}`
@@ -84,7 +96,7 @@ function generate(filePath: string, content: string) {
             return;
         }
         try {
-            code = json2dart(className, jsonObject);
+            code = json2dart(className, jsonObject, isMock);
         } catch (e) {
             vscode.window.showErrorMessage(
                 `Unexpected error occurred when generate json to dart: ${filePath}`

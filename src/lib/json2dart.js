@@ -10,7 +10,8 @@ function showInfo(message, type) {
             break;
     }
 }
-export default function generate(rootClass, jsonObj) {
+export default function generate(rootClass, jsonObj, isMock) {
+    const sourceObject = JSON.parse(JSON.stringify(jsonObj));
     //snake to camel
     const snakeToCamel = (str) =>
         str.replace(/([-_][a-zA-Z])/g, (group) =>
@@ -287,7 +288,11 @@ export default function generate(rootClass, jsonObj) {
     };
 
     //!json对象转dart
-    let objToDart = (jsonObj, prefix, baseClass) => {
+    let objToDart = (jsonObj, prefix, baseClass, isRoot) => {
+        if (isRoot && Array.isArray(jsonObj)) {
+            showInfo(`the root of json object should not be Array.`, 'error');
+            return;
+        }
         if (Array.isArray(jsonObj)) {
             if (!baseClass.endsWith('Item')) {
                 baseClass += 'Item';
@@ -315,9 +320,11 @@ export default function generate(rootClass, jsonObj) {
         // lines.push(`/*\r\n${JSON.stringify(jsonObj, null, 2)} \r\n*/\r\n`);
 
         constructorLines.push(`  ${className}({\n`);
+
         fromJsonLines.push(
             `  ${className}.fromJson(Map<String, dynamic> json) {\n`
         );
+
         toJsonLines.push(`  Map<String, dynamic> toJson() {\n`);
         toJsonLines.push(
             `    final Map<String, dynamic> data = Map<String, dynamic>();\n`
@@ -432,6 +439,14 @@ export default function generate(rootClass, jsonObj) {
         lines.push(fromJsonLines.join(''));
         lines.push(toJsonLines.join(''));
 
+        if (isMock && isRoot) {
+            lines.push(
+                `  ${className}.fromMock(): this.fromJson(${JSON.stringify(
+                    sourceObject
+                )});\n`
+            );
+        }
+
         lines.push(`}\n`);
 
         let linesOutput = lines.join('\r\n');
@@ -444,5 +459,5 @@ export default function generate(rootClass, jsonObj) {
 
     removeSurplusElement(jsonObj);
 
-    return objToDart(jsonObj, rootClass, '');
+    return objToDart(jsonObj, rootClass, '', true);
 }
