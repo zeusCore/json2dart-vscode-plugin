@@ -17,31 +17,34 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.d.json');
-    fileWatcher.onDidChange((uri) => {
-        generateByUri(uri);
-    });
-    fileWatcher.onDidCreate((uri) => {
-        generateByUri(uri);
-    });
-    fileWatcher.onDidDelete((uri) => {
-        deleteGFile(uri);
-    });
+    bind(vscode.workspace.createFileSystemWatcher('**/*.d.json'));
+    bind(vscode.workspace.createFileSystemWatcher('**/*.dart.json'));
 
     generateAll();
 
     context.subscriptions.push(disposable);
+    function bind(fileWatcher: vscode.FileSystemWatcher) {
+        fileWatcher.onDidChange((uri) => {
+            generateByUri(uri);
+        });
+        fileWatcher.onDidCreate((uri) => {
+            generateByUri(uri);
+        });
+        fileWatcher.onDidDelete((uri) => {
+            deleteGFile(uri);
+        });
+    }
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() {}
 
 function deleteGFile(uri: vscode.Uri) {
-    if (uri.fsPath.includes('.d.json')) {
+    if (uri.fsPath.includes('.d.json') || uri.fsPath.includes('.dart.json')) {
         if (compiledJson.has(uri.fsPath)) {
             compiledJson.delete(uri.fsPath);
         }
-        const gfile = uri.fsPath.replace(/\.(d|tpl)\.json/, '.g.dart');
+        const gfile = uri.fsPath.replace(/\.(d|dart)\.json/, '.g.dart');
         if (fs.existsSync(gfile)) {
             vscode.workspace.fs.delete(vscode.Uri.parse(gfile));
         }
@@ -61,21 +64,17 @@ function generateAll() {
     vscode.workspace.findFiles('**/*.d.json').then((uris) => {
         uris.forEach(generateByUri);
     });
-    vscode.workspace.findFiles('**/*.tpl.json').then((uris) => {
+    vscode.workspace.findFiles('**/*.dart.json').then((uris) => {
         uris.forEach(generateByUri);
     });
 }
 
 function generate(filePath: string, content: string) {
-    if (filePath.includes('.d.json') || filePath.includes('.tpl.json')) {
-        const targetPath = filePath.replace(
-            /(\.mock)?\.(d(art)?|tpl?)\.json/,
-            '.g.dart'
-        );
+    if (filePath.includes('.d.json') || filePath.includes('.dart.json')) {
+        const targetPath = filePath.replace(/\.(d(art)?)\.json/, '.g.dart');
         const fileName = targetPath.split(/[\\\/]/).pop() || '';
         const className = fileName.split('.')[0].replace(/\W/, '');
-        const isTpl = filePath.includes('.tpl.json');
-        const isMock = filePath.includes('.mock.');
+
         if (!/[a-zA-Z_]/.test(className[0])) {
             vscode.window.showErrorMessage(
                 `File name should be start with /[a-zA-Z]/: ${className}`
@@ -84,10 +83,26 @@ function generate(filePath: string, content: string) {
         }
         let jsonObject;
         let code;
+        let useData;
+        let isTpl = false;
+        let useMock = false;
+        let jsonTpl;
+
         try {
             jsonObject = JSON.parse(content);
+
+            jsonTpl = jsonObject['@fromJson'];
+
+            if (!jsonTpl) {
+                jsonTpl = jsonObject;
+            } else {
+                isTpl = !!jsonObject['@template'];
+                useData = !!jsonObject['@useData'];
+                useMock = !!jsonObject['@useMock'];
+            }
+
             if (isTpl) {
-                jsonObject = Mock.mock(jsonObject);
+                jsonTpl = Mock.mock(jsonTpl);
             }
         } catch (e) {
             vscode.window.showErrorMessage(
@@ -96,7 +111,7 @@ function generate(filePath: string, content: string) {
             return;
         }
         try {
-            code = json2dart(className, jsonObject, isMock);
+            code = json2dart(className, jsonTpl, { useData, useMock });
         } catch (e) {
             vscode.window.showErrorMessage(
                 `Unexpected error occurred when generate json to dart: ${filePath}`

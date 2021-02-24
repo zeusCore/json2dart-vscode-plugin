@@ -10,7 +10,7 @@ function showInfo(message, type) {
             break;
     }
 }
-export default function generate(rootClass, jsonObj, isMock) {
+export default function generate(rootClass, jsonObj, { useData, useMock }) {
     const sourceObject = JSON.parse(JSON.stringify(jsonObj));
     //snake to camel
     const snakeToCamel = (str) =>
@@ -321,9 +321,7 @@ export default function generate(rootClass, jsonObj, isMock) {
 
         constructorLines.push(`  ${className}({\n`);
 
-        fromJsonLines.push(
-            `  ${className}.fromJson(Map<String, dynamic> json) {\n`
-        );
+        fromJsonLines.push(`  void _fromJson(Map<String, dynamic> json) {\n`);
 
         toJsonLines.push(`  Map<String, dynamic> toJson() {\n`);
         toJsonLines.push(
@@ -439,12 +437,30 @@ export default function generate(rootClass, jsonObj, isMock) {
         lines.push(fromJsonLines.join(''));
         lines.push(toJsonLines.join(''));
 
-        if (isMock && isRoot) {
-            lines.push(
-                `  ${className}.fromMock(): this.fromJson(${JSON.stringify(
-                    sourceObject
-                )});\n`
-            );
+        lines.push(
+            `  ${className}.fromJson(Map<String, dynamic> json){
+                this._fromJson(json);
+            }\n`
+        );
+
+        if (isRoot) {
+            if (useData) {
+                lines.push(
+                    `  ${className}.useData(): this.fromJson(${JSON.stringify(
+                        sourceObject,
+                        null,
+                        2
+                    )});\n`
+                );
+            }
+            if (useMock) {
+                lines.push(
+                    `  ${className}.useMock(){
+    assert(bool.fromEnvironment('dart.vm.product'), 'useMock should not be used in production.');
+    this._fromJson(${JSON.stringify(sourceObject, null, 2)});
+                    }\n`
+                );
+            }
         }
 
         lines.push(`}\n`);
