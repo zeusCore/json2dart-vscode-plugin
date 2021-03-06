@@ -239,10 +239,10 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
             fromJsonLines.unshift(
                 `${makeBlank(count * 2)}v.forEach((v) {\n${makeBlank(
                     count * 3
-                )}var arr${count} = ${genericStringGenerator(
+                )}${genericStringGenerator(
                     innerClass,
                     total - count
-                )}();`
+                )} arr${count} = [];`
             );
             fromJsonLines.push(
                 `${makeBlank(count * 3)}arr${
@@ -252,7 +252,7 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
             toJsonLines.unshift(
                 `${makeBlank(count * 2)}v.forEach((v) {\n${makeBlank(
                     count * 3
-                )}var arr${count} = List();`
+                )}var arr${count} = [];`
             );
             toJsonLines.push(
                 `${makeBlank(count * 3)}arr${
@@ -270,7 +270,7 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
                 count * 2
             )}var v = json[${jsonKey}];\n${makeBlank(
                 count * 2
-            )}var arr0 = ${genericStringGenerator(innerClass, total)}();`
+            )}${genericStringGenerator(innerClass, total)} arr0 = [];`
         );
         fromJsonLines.push(
             `${makeBlank(count * 2)}${makeBlank(
@@ -278,7 +278,7 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
             )}${legalKey} = arr0;\n    }\n`
         );
         toJsonLines.unshift(
-            `    if (${legalKey} != null) {\n      var v = ${legalKey};\n      var arr0 = List();`
+            `    if (${legalKey} != null) {\n      var v = ${legalKey}??[];\n      var arr0 = [];`
         );
         toJsonLines.push(`      data[${jsonKey}] = arr0;\n    }\n`);
 
@@ -287,17 +287,33 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
         return { fromJsonLinesJoined, toJsonLinesJoined };
     };
 
+    const buildName = (baseClass, jsonObj) => {
+        if (Array.isArray(jsonObj)) {
+            if (baseClass.endsWith('Items')) {
+                return baseClass.replace(/Items$/, 'ItemEntity');
+            }
+
+            if (!baseClass.endsWith('ItemEntity')) {
+                return baseClass + 'ItemEntity';
+            }
+        }
+        if (!baseClass.endsWith('Entity')) {
+            return baseClass + 'Entity';
+        }
+        return baseClass;
+    };
+
     //!json对象转dart
-    let objToDart = (jsonObj, prefix, baseClass, isRoot) => {
+    let objToDart = (jsonObj, baseClass, isRoot) => {
         if (isRoot && Array.isArray(jsonObj)) {
             showInfo(`the root of json object should not be Array.`, 'error');
             return;
         }
+
+        baseClass = buildName(baseClass, jsonObj);
+
         if (Array.isArray(jsonObj)) {
-            if (!baseClass.endsWith('Item')) {
-                baseClass += 'Item';
-            }
-            return objToDart(jsonObj[0], prefix, baseClass);
+            return objToDart(jsonObj[0], baseClass);
         }
 
         const props = Object.keys(jsonObj);
@@ -312,7 +328,7 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
         let fromJsonLines = [];
         let toJsonLines = [];
 
-        let className = `${prefix}${uppercaseFirst(baseClass)}`;
+        let className = `${uppercaseFirst(baseClass)}`;
 
         className = snakeToCamel(className);
 
@@ -354,14 +370,13 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
                     element = '';
                 }
                 if (typeof element === 'object') {
-                    let subClassName = `${className}${uppercaseFirst(key)}`;
+                    let subClassName = `${uppercaseFirst(key)}`;
 
                     subClassName = snakeToCamel(subClassName);
 
+                    subClassName = buildName(subClassName, element);
+
                     if (Array.isArray(element)) {
-                        if (!subClassName.endsWith('Item')) {
-                            subClassName += 'Item';
-                        }
                         let { inner, innerClass, count } = getInnerObjInfo(
                             element,
                             subClassName
@@ -380,21 +395,21 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
                             innerClass,
                             count
                         );
-                        propsLines.push(`  ${genericString} ${legalKey};\n`);
+                        propsLines.push(`  ${genericString}? ${legalKey};\n`);
                         fromJsonLines.push(fromJsonLinesJoined);
                         toJsonLines.push(toJsonLinesJoined);
                         if (typeof inner === 'object') {
-                            lines.unshift(objToDart(element, className, key));
+                            objToDart(element, key);
                         }
                     } else {
-                        lines.unshift(objToDart(element, className, key));
-                        propsLines.push(`  ${subClassName} ${legalKey};\n`);
+                        objToDart(element, key);
+                        propsLines.push(`  ${subClassName}? ${legalKey};\n`);
                         let typeCheck = '';
                         fromJsonLines.push(
                             `    ${legalKey} = (json[${jsonKey}] != null${typeCheck}) ? ${subClassName}.fromJson(json[${jsonKey}]) : null;\n`
                         );
                         toJsonLines.push(
-                            `    if (${legalKey} != null) {\n      data[${jsonKey}] = ${thisData}${legalKey}.toJson();\n    }\n`
+                            `    if (${legalKey} != null) {\n      data[${jsonKey}] = ${thisData}${legalKey}?.toJson();\n    }\n`
                         );
                     }
                 } else {
@@ -405,19 +420,19 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
                         type = 'bool';
                     } else {
                         if (typeof element === 'string') {
-                            toType = `json[${jsonKey}]?.toString()`;
+                            toType = `json[${jsonKey}]`;
                             type = 'String';
                         } else if (typeof element === 'number') {
                             if (Number.isInteger(element)) {
-                                toType = `json[${jsonKey}]?.toInt()`;
+                                toType = `json[${jsonKey}]`;
                                 type = 'int';
                             } else {
-                                toType = `json[${jsonKey}]?.toDouble()`;
+                                toType = `json[${jsonKey}]`;
                                 type = 'double';
                             }
                         }
                     }
-                    propsLines.push(`  ${type} ${legalKey};\n`);
+                    propsLines.push(`  ${type}? ${legalKey};\n`);
                     fromJsonLines.push(`    ${legalKey} = ${toType};\n`);
                     toJsonLines.push(
                         `    data[${jsonKey}] = ${thisData}${legalKey};\n`
@@ -467,7 +482,7 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
 
         let linesOutput = lines.join('\r\n');
 
-        return linesOutput;
+        classes.unshift(linesOutput);
     };
 
     rootClass = snakeToCamel(rootClass);
@@ -475,5 +490,9 @@ export default function generate(rootClass, jsonObj, { useData, useMock }) {
 
     removeSurplusElement(jsonObj);
 
-    return objToDart(jsonObj, rootClass, '', true);
+    const classes = [];
+
+    objToDart(jsonObj, rootClass, true);
+
+    return classes.join('\n');
 }

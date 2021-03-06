@@ -1,0 +1,8 @@
+{
+    "@import": ["item.g.dart"],
+    "@fromJson": {
+        "list": ["@include obj.name ./item.d.json"],
+        "list2 : ItemEntity": [{ "id": 123 }],
+        "info : InfoEntity": { "name": "my name" }
+    }
+}
